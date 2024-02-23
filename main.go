@@ -1,11 +1,14 @@
 package main
 
-import(
+import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Movie struct {
@@ -32,13 +35,12 @@ func deleteMovie(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	for index, item := range movies {
-		if item.ID == params["ID"] {
+		if item.ID == params["id"] {
 			movies = append(movies[:index], movies[index+1:]...)
 			break
 		}
 	}
 	json.NewEncoder(w).Encode(movies)
-
 }
 
 func getMovie(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +48,7 @@ func getMovie(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	for _, item := range movies {
-		if item.ID == params["ID"] {
+		if item.ID == params["id"] {
 			json.NewEncoder(w).Encode(item)
 			return
 		}
@@ -56,28 +58,28 @@ func getMovie(w http.ResponseWriter, r *http.Request) {
 func createMovie(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var movie Movie
-	_, json.NewDecode(r.Body).Decode(&movie)
+	_ = json.NewDecoder(r.Body).Decode(&movie)
 	movie.ID = strconv.Itoa(rand.Intn(1000000))
 	movies = append(movies, movie)
 	json.NewEncoder(w).Encode(movie)
 }
 
 func updateMovie(w http.ResponseWriter, r *http.Request) {
-	r.Header().Set("Content-Type", "application/json") //set json content type
+	w.Header().Set("Content-Type", "application/json") //set json content type
 	params := mux.Vars(r)
-	//json content type
-	//params
-	//for loop over movies
-	//delete movies with the id you send
-	//add movies you send with postman
 
 	for index, item := range movies {
-		if item.ID == params["ID"] {
-			movies = append(movies[:index], movie[index+1:])
-			
+		if item.ID == params["id"] {
+			movies = append(movies[:index], movies[index+1:]...) //delete movies with id you send
+
+			var movie Movie
+			_ = json.NewDecoder(r.Body).Decode(&movie)
+			movie.ID = strconv.Itoa(rand.Intn(100000))
+			movies = append(movies, movie) //add movies you send
+			json.NewEncoder(w).Encode(movie)
+			return
 		}
 	}
-	json.NewEncode(w).Encode(movie)
 }
 
 func main() {
@@ -87,15 +89,14 @@ func main() {
 	movies = append(movies, Movie{ID: "1", ISBN: "43423", Title: "Movie1", Director: &Director{FirstName: "Martin", LastName: "Scorcese"}})
 	movies = append(movies, Movie{ID: "2", ISBN: "43424", Title: "Movie2", Director: &Director{FirstName: "Christofer", LastName: "Nolan"}})
 
-	r.HandleFunc("/movies", getMovies).Method("GET")
-	r.HandleFunc("/movies/{id}", getMovie).Method("GET")
-	r.HandleFunc("/movies", createMovie).Method("POST")
-	r.HandleFunc("/movies", updateMovie).Method("PUT")
-	r.HandleFunc("/movie", deleteMovie).Method("DELETE")
+	r.HandleFunc("/movies", getMovies).Methods("GET")
+	r.HandleFunc("/movies/{id}", getMovie).Methods("GET")
+	r.HandleFunc("/movies", createMovie).Methods("POST")
+	r.HandleFunc("/movies", updateMovie).Methods("PUT")
+	r.HandleFunc("/movies", deleteMovie).Methods("DELETE")
 
 	fmt.Printf("Starting server at port 8000\n")
 	if err := http.ListenAndServe(":8000", r); err != nil {
 		log.Fatal(err)
 	}
-
 }
